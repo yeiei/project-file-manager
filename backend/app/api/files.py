@@ -60,8 +60,13 @@ def browse_directory(
                 # 跳过无法访问的文件
                 continue
         
+        # 转换类型字段以适配前端
+        for item in items:
+            item['isDirectory'] = item['type'] == 'directory'
+            del item['type']
+        
         # 按类型排序（目录在前），再按名称排序
-        items.sort(key=lambda x: (x["type"] != "directory", x["name"].lower()))
+        items.sort(key=lambda x: (not x['isDirectory'], x['name'].lower()))
         
         relative_path = str(Path(project.path) / path) if path else project.path
         

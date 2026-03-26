@@ -17,7 +17,7 @@ def validate_path_safety(path: str, base_dir: str = "/mnt/nas") -> bool:
     
     Args:
         path: 用户输入的路径
-        base_dir: 基础目录，路径不应超出此目录
+        base_dir: 基础目录，路径不应超出此目录（仅用于相对路径）
     
     Returns:
         bool: 路径是否安全
@@ -27,31 +27,40 @@ def validate_path_safety(path: str, base_dir: str = "/mnt/nas") -> bool:
     """
     # 解析路径并规范化
     try:
-        # 将路径转换为绝对路径并规范化（解析 .. 和 .）
-        full_path = Path(base_dir) / path
-        resolved_path = full_path.resolve()
-        base_path = Path(base_dir).resolve()
-        
-        # 检查是否超出基础目录
-        if not str(resolved_path).startswith(str(base_path)):
-            raise HTTPException(
-                status_code=400,
-                detail="路径不允许超出允许的目录范围"
-            )
-        
-        # 检查路径中是否包含危险字符或模式
-        dangerous_patterns = ["../", "..\\", "~", "$"]
-        for pattern in dangerous_patterns:
-            if pattern in path:
+        # 如果是绝对路径，直接解析；如果是相对路径，基于 base_dir 解析
+        if Path(path).is_absolute():
+            resolved_path = Path(path).resolve()
+            # 对于绝对路径，只检查路径是否存在且可访问
+            if not resolved_path.exists():
                 raise HTTPException(
                     status_code=400,
-                    detail=f"路径包含不安全字符: {pattern}"
+                    detail="路径不存在"
                 )
-        
-        return True
+            return True
+        else:
+            # 相对路径：基于 base_dir 解析
+            full_path = Path(base_dir) / path
+            resolved_path = full_path.resolve()
+            base_path = Path(base_dir).resolve()
+            
+            # 检查是否超出基础目录
+            if not str(resolved_path).startswith(str(base_path)):
+                raise HTTPException(
+                    status_code=400,
+                    detail="路径不允许超出允许的目录范围"
+                )
+            
+            # 检查路径是否存在
+            if not resolved_path.exists():
+                raise HTTPException(
+                    status_code=400,
+                    detail="路径不存在"
+                )
+            
+            return True
+    except HTTPException:
+        raise
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise
         raise HTTPException(status_code=400, detail="路径格式无效")
 
 
@@ -66,15 +75,10 @@ class ProjectCreate(BaseModel):
     @classmethod
     def validate_path(cls, v: str) -> str:
         """验证路径安全性"""
-        # 检查绝对路径
-        if v.startswith('/') or v.startswith('\\'):
-            raise ValueError("路径不能是绝对路径")
+        # 允许绝对路径和相对路径
+        # 实际的安全性检查由 validate_path_safety 函数完成
         
-        # 检查路径遍历
-        if '..' in v:
-            raise ValueError("路径不能包含 ..")
-        
-        # 检查危险字符
+        # 检查危险字符（不在安全路径中的字符）
         if any(char in v for char in ['$', '`', '|', ';', '&', '\n', '\r']):
             raise ValueError("路径包含非法字符")
         
