@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   timeout: 10000
 })
 
@@ -22,10 +22,30 @@ export interface CreateProjectInput {
   description: string
 }
 
+export interface FileItem {
+  id: number
+  name: string
+  path: string
+  isDirectory: boolean
+  size: number
+  modifiedTime: string
+  children?: FileItem[]
+}
+
+export interface BrowseParams {
+  projectId: number
+  path?: string
+}
+
 export const projectsApi = {
   getList: () => api.get<Project[]>('/api/projects').then(res => res.data),
   create: (data: CreateProjectInput) => api.post<Project>('/api/projects', data).then(res => res.data),
   delete: (id: number) => api.delete(`/api/projects/${id}`)
+}
+
+export const filesApi = {
+  browse: (params: BrowseParams) => api.get<FileItem[]>('/api/files/browse', { params }).then(res => res.data),
+  preview: (fileId: number) => api.get(`/api/files/preview/${fileId}`, { responseType: 'blob' })
 }
 
 export default api
