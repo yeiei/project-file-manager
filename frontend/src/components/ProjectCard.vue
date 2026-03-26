@@ -21,6 +21,12 @@ const debuggerTags = computed(() => {
   if (!props.project.debugger) return []
   return props.project.debugger.split(',').map(s => s.trim()).filter(s => s)
 })
+
+// 自定义字段
+const customFields = computed(() => {
+  if (!props.project.custom_fields) return []
+  return Object.entries(props.project.custom_fields)
+})
 </script>
 
 <template>
@@ -51,6 +57,14 @@ const debuggerTags = computed(() => {
           <strong>调试人：</strong>
           <NTag v-for="tag in debuggerTags" :key="tag" size="small" type="warning" style="margin-right: 4px">{{ tag }}</NTag>
         </p>
+      </template>
+      <template v-if="customFields.length > 0">
+        <NDivider style="margin: 8px 0" />
+        <div class="custom-fields">
+          <p v-for="[key, value] in customFields" :key="key" class="custom-field">
+            <strong>{{ key }}：</strong>{{ value }}
+          </p>
+        </div>
       </template>
       <p class="improvement" v-if="project.improvements">
         <strong>改进内容：</strong>{{ project.improvements }}
@@ -101,5 +115,15 @@ const debuggerTags = computed(() => {
   font-size: 13px;
   color: #999;
   margin-top: 12px;
+}
+
+.custom-fields {
+  margin-top: 4px;
+}
+
+.custom-field {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
 }
 </style>

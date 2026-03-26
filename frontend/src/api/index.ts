@@ -15,6 +15,7 @@ export interface Project {
   owner: string
   debugger: string
   improvements: string
+  custom_fields: Record<string, string>
 }
 
 export interface CreateProjectInput {
@@ -26,6 +27,7 @@ export interface CreateProjectInput {
   owner: string
   debugger: string
   improvements: string
+  custom_fields: Record<string, string>
 }
 
 export interface FileItem {

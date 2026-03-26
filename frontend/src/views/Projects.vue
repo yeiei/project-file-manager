@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NButton, NCard, NModal, NForm, NFormItem, NInput, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup, NDynamicTags, NInputNumber } from 'naive-ui'
+import { NButton, NCard, NModal, NForm, NFormItem, NInput, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup, NDynamicTags, NInputNumber, NDivider } from 'naive-ui'
 import { useProjectsStore } from '../stores/projects'
 import ProjectCard from '../components/ProjectCard.vue'
 import type { CreateProjectInput } from '../api'
@@ -12,7 +12,7 @@ const store = useProjectsStore()
 const currentYear = new Date().getFullYear()
 
 const showModal = ref(false)
-const formValue = ref<CreateProjectInput & { ownerTags: string[], debuggerTags: string[] }>({
+const formValue = ref<CreateProjectInput & { ownerTags: string[], debuggerTags: string[], customFields: { name: string; value: string }[] }>({
   name: '',
   path: '',
   year: currentYear,
@@ -22,7 +22,8 @@ const formValue = ref<CreateProjectInput & { ownerTags: string[], debuggerTags: 
   debugger: '',
   improvements: '',
   ownerTags: [],
-  debuggerTags: []
+  debuggerTags: [],
+  customFields: []
 })
 
 onMounted(() => {
@@ -40,7 +41,8 @@ const openModal = () => {
     debugger: '',
     improvements: '',
     ownerTags: [],
-    debuggerTags: []
+    debuggerTags: [],
+    customFields: []
   }
   showModal.value = true
 }
@@ -75,14 +77,24 @@ const handleSubmit = async () => {
   }
   
   // 将标签数组转换为逗号分隔的字符串
+  // 将自定义字段数组转换为对象
+  const customFields: Record<string, string> = {}
+  formValue.value.customFields.forEach(field => {
+    if (field.name && field.value) {
+      customFields[field.name] = field.value
+    }
+  })
+  
   const submitData = {
     ...formValue.value,
     owner: formValue.value.ownerTags.join(', '),
-    debugger: formValue.value.debuggerTags.join(', ')
+    debugger: formValue.value.debuggerTags.join(', '),
+    custom_fields: customFields
   }
   // 删除临时字段
   delete (submitData as any).ownerTags
   delete (submitData as any).debuggerTags
+  delete (submitData as any).customFields
   
   try {
     await store.createProject(submitData)
@@ -108,6 +120,14 @@ const handleDelete = (id: number) => {
       }
     }
   })
+}
+
+const addCustomField = () => {
+  formValue.value.customFields.push({ name: '', value: '' })
+}
+
+const removeCustomField = (index: number) => {
+  formValue.value.customFields.splice(index, 1)
 }
 </script>
 
@@ -141,10 +161,7 @@ const handleDelete = (id: number) => {
         </NFormItem>
         
         <NFormItem label="项目路径" required>
-          <NInputGroup>
-            <NInput v-model:value="formValue.path" placeholder="请输入或选择项目路径" />
-            <NButton @click="selectDirectory">选择目录</NButton>
-          </NInputGroup>
+          <NInput v-model:value="formValue.path" placeholder="请输入服务器上的项目路径，如：/home/yei/projects" />
         </NFormItem>
 
         <NFormItem label="年份">
@@ -180,6 +197,36 @@ const handleDelete = (id: number) => {
             :rows="3"
           />
         </NFormItem>
+
+        <NDivider>自定义字段</NDivider>
+
+        <div class="custom-fields">
+          <div v-for="(field, index) in formValue.customFields" :key="index" class="custom-field-row">
+            <NInput 
+              v-model:value="field.name" 
+              placeholder="字段名（如：负责人、电话、邮箱）" 
+              style="width: 40%"
+            />
+            <span style="margin: 0 8px">:</span>
+            <NInput 
+              v-model:value="field.value" 
+              placeholder="字段值" 
+              style="flex: 1"
+            />
+            <NButton 
+              type="error" 
+              quaternary 
+              size="small" 
+              @click="removeCustomField(index)"
+              style="margin-left: 8px"
+            >
+              删除
+            </NButton>
+          </div>
+          <NButton type="primary" quaternary @click="addCustomField" size="small">
+            + 添加自定义字段
+          </NButton>
+        </div>
       </NForm>
 
       <template #footer>
@@ -231,5 +278,15 @@ const handleDelete = (id: number) => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.custom-fields {
+  padding: 8px 0;
+}
+
+.custom-field-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
 }
 </style>
