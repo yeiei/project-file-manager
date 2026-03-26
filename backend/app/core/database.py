@@ -22,5 +22,5 @@ def get_db():
 
 def init_db():
     """初始化数据库表"""
-    from app.models import project, file, tag, favorite
+    from app.models import project, file, tag, favorite, user
     Base.metadata.create_all(bind=engine)

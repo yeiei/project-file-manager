@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.database import init_db
-from app.api import projects, files, search, tags, favorites
+from app.api import projects, files, search, tags, favorites, auth
 
 
 @asynccontextmanager
@@ -44,6 +44,7 @@ app.add_middleware(
 )
 
 # 注册路由
+app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(files.router)
 app.include_router(search.router)
