@@ -5,6 +5,31 @@ const api = axios.create({
   timeout: 10000
 })
 
+// 请求拦截器：添加 token
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  error => Promise.reject(error)
+)
+
+// 响应拦截器：处理错误
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
 export interface Project {
   id: number
   name: string
@@ -92,6 +117,22 @@ export const favoritesApi = {
   add: (fileId: number) => api.post(`/api/favorites/${fileId}`),
   remove: (fileId: number) => api.delete(`/api/favorites/${fileId}`),
   check: (fileId: number) => api.get<boolean>(`/api/favorites/check/${fileId}`).then(res => res.data)
+}
+
+export interface User {
+  id: number
+  username: string
+}
+
+export const authApi = {
+  login: (username: string, password: string) => 
+    api.post<{ token: string; user: User }>('/api/auth/login', { username, password })
+      .then(res => res.data),
+  register: (username: string, password: string) => 
+    api.post<{ message: string }>('/api/auth/register', { username, password })
+      .then(res => res.data),
+  getCurrentUser: () => 
+    api.get<User>('/api/auth/me').then(res => res.data)
 }
 
 export default api
