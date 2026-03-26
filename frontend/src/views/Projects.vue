@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NButton, NCard, NModal, NForm, NFormItem, NInput, NSelect, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup, NDynamicTags } from 'naive-ui'
+import { NButton, NCard, NModal, NForm, NFormItem, NInput, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup, NDynamicTags, NInputNumber } from 'naive-ui'
 import { useProjectsStore } from '../stores/projects'
 import ProjectCard from '../components/ProjectCard.vue'
 import type { CreateProjectInput } from '../api'
@@ -10,10 +10,6 @@ const dialog = useDialog()
 const store = useProjectsStore()
 
 const currentYear = new Date().getFullYear()
-const yearOptions = Array.from({ length: 31 }, (_, i) => ({
-  label: String(2000 + i),
-  value: 2000 + i
-}))
 
 const showModal = ref(false)
 const formValue = ref<CreateProjectInput & { ownerTags: string[], debuggerTags: string[] }>({
@@ -152,7 +148,7 @@ const handleDelete = (id: number) => {
         </NFormItem>
 
         <NFormItem label="年份">
-          <NSelect v-model:value="formValue.year" :options="yearOptions" />
+          <NInputNumber v-model:value="formValue.year" :show-button="false" placeholder="请输入年份" style="width: 100%" />
         </NFormItem>
 
         <NFormItem label="分类" required>
