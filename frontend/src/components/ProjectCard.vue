@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { NCard, NTag, NButton, NSpace, NDivider } from 'naive-ui'
+import { computed } from 'vue'
 import type { Project } from '../api'
 
-defineProps<{
+const props = defineProps<{
   project: Project
 }>()
 
 const emit = defineEmits<{
   delete: [id: number]
 }>()
+
+// 将逗号分隔的字符串转换为标签数组
+const ownerTags = computed(() => {
+  if (!props.project.owner) return []
+  return props.project.owner.split(',').map(s => s.trim()).filter(s => s)
+})
+
+const debuggerTags = computed(() => {
+  if (!props.project.debugger) return []
+  return props.project.debugger.split(',').map(s => s.trim()).filter(s => s)
+})
 </script>
 
 <template>
@@ -29,13 +41,15 @@ const emit = defineEmits<{
       <p class="path">
         <strong>路径：</strong>{{ project.path }}
       </p>
-      <template v-if="project.owner || project.debugger">
+      <template v-if="ownerTags.length > 0 || debuggerTags.length > 0">
         <NDivider style="margin: 8px 0" />
-        <p class="owner" v-if="project.owner">
-          <strong>负责人：</strong>{{ project.owner }}
+        <p class="owner" v-if="ownerTags.length > 0">
+          <strong>负责人：</strong>
+          <NTag v-for="tag in ownerTags" :key="tag" size="small" type="success" style="margin-right: 4px">{{ tag }}</NTag>
         </p>
-        <p class="debugger" v-if="project.debugger">
-          <strong>调试人：</strong>{{ project.debugger }}
+        <p class="debugger" v-if="debuggerTags.length > 0">
+          <strong>调试人：</strong>
+          <NTag v-for="tag in debuggerTags" :key="tag" size="small" type="warning" style="margin-right: 4px">{{ tag }}</NTag>
         </p>
       </template>
       <p class="improvement" v-if="project.improvements">

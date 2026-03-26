@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NButton, NCard, NModal, NForm, NFormItem, NInput, NSelect, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup } from 'naive-ui'
+import { NButton, NCard, NModal, NForm, NFormItem, NInput, NSelect, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup, NDynamicTags } from 'naive-ui'
 import { useProjectsStore } from '../stores/projects'
 import ProjectCard from '../components/ProjectCard.vue'
 import type { CreateProjectInput } from '../api'
@@ -9,22 +9,25 @@ const message = useMessage()
 const dialog = useDialog()
 const store = useProjectsStore()
 
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: 31 }, (_, i) => ({
+  label: String(2000 + i),
+  value: 2000 + i
+}))
+
 const showModal = ref(false)
-const formValue = ref<CreateProjectInput>({
+const formValue = ref<CreateProjectInput & { ownerTags: string[], debuggerTags: string[] }>({
   name: '',
   path: '',
-  year: 2026,
+  year: currentYear,
   category: '',
   description: '',
   owner: '',
   debugger: '',
-  improvements: ''
+  improvements: '',
+  ownerTags: [],
+  debuggerTags: []
 })
-
-const yearOptions = Array.from({ length: 22 }, (_, i) => ({
-  label: String(2005 + i),
-  value: 2005 + i
-}))
 
 onMounted(() => {
   store.fetchProjects()
@@ -34,12 +37,14 @@ const openModal = () => {
   formValue.value = {
     name: '',
     path: '',
-    year: 2026,
+    year: currentYear,
     category: '',
     description: '',
     owner: '',
     debugger: '',
-    improvements: ''
+    improvements: '',
+    ownerTags: [],
+    debuggerTags: []
   }
   showModal.value = true
 }
@@ -73,8 +78,18 @@ const handleSubmit = async () => {
     return
   }
   
+  // 将标签数组转换为逗号分隔的字符串
+  const submitData = {
+    ...formValue.value,
+    owner: formValue.value.ownerTags.join(', '),
+    debugger: formValue.value.debuggerTags.join(', ')
+  }
+  // 删除临时字段
+  delete (submitData as any).ownerTags
+  delete (submitData as any).debuggerTags
+  
   try {
-    await store.createProject(formValue.value)
+    await store.createProject(submitData)
     message.success('创建成功')
     showModal.value = false
   } catch (e) {
@@ -145,11 +160,11 @@ const handleDelete = (id: number) => {
         </NFormItem>
 
         <NFormItem label="负责人">
-          <NInput v-model:value="formValue.owner" placeholder="请输入负责人" />
+          <NDynamicTags v-model:value="formValue.ownerTags" />
         </NFormItem>
 
         <NFormItem label="调试人">
-          <NInput v-model:value="formValue.debugger" placeholder="请输入调试人" />
+          <NDynamicTags v-model:value="formValue.debuggerTags" />
         </NFormItem>
 
         <NFormItem label="改进内容">
