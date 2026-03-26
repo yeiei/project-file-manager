@@ -17,7 +17,8 @@ class FileIndex(Base):
     size = Column(Integer)
     extension = Column(String(20))
     parent_path = Column(String(1024))
-    content = Column(Text)  # 存储文件内容用于搜索（文本文件）
+    # 注意：content 列用于存储文件内容用于搜索，但 SQLite 不支持动态添加列
+    # 可以通过手动迁移或重建数据库来添加
     created_at = Column(DateTime, default=datetime.utcnow)
     modified_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
