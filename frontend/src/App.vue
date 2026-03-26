@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import { NConfigProvider, NMessageProvider, NDialogProvider, NTabs, NTabPane, NLayout, NLayoutContent } from 'naive-ui'
 import Projects from './views/Projects.vue'
 import FileBrowser from './views/FileBrowser.vue'
+import Search from './views/Search.vue'
+import Tags from './views/Tags.vue'
+import Favorites from './views/Favorites.vue'
 
 const activeTab = ref('projects')
 </script>
@@ -19,6 +22,15 @@ const activeTab = ref('projects')
               </NTabPane>
               <NTabPane name="files" tab="文件浏览">
                 <FileBrowser />
+              </NTabPane>
+              <NTabPane name="search" tab="搜索">
+                <Search />
+              </NTabPane>
+              <NTabPane name="tags" tab="标签">
+                <Tags />
+              </NTabPane>
+              <NTabPane name="favorites" tab="收藏">
+                <Favorites />
               </NTabPane>
             </NTabs>
           </NLayoutContent>
