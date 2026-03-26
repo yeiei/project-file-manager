@@ -14,6 +14,11 @@ class Project(Base):
     year = Column(Integer)
     category = Column(String(100))
     description = Column(Text)
+    # 新增字段
+    owner = Column(String(100))
+    debugger = Column(String(100))
+    improvements = Column(Text)
+    # 原有字段
     index_status = Column(String(20), default="pending")  # 'pending', 'indexing', 'completed'
     file_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)

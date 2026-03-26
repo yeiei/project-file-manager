@@ -70,6 +70,10 @@ class ProjectCreate(BaseModel):
     year: Optional[int] = Field(None, ge=2000, le=2100, description="项目年份")
     category: Optional[str] = Field(None, max_length=100, description="项目分类")
     description: Optional[str] = Field(None, max_length=1000, description="项目描述")
+    # 新增字段
+    owner: Optional[str] = Field(None, max_length=100, description="负责人")
+    debugger: Optional[str] = Field(None, max_length=100, description="调试人")
+    improvements: Optional[str] = Field(None, description="改进内容")
 
     @field_validator('path')
     @classmethod
@@ -92,6 +96,11 @@ class ProjectResponse(BaseModel):
     year: Optional[int]
     category: Optional[str]
     description: Optional[str]
+    # 新增字段
+    owner: Optional[str] = None
+    debugger: Optional[str] = None
+    improvements: Optional[str] = None
+    # 原有字段
     index_status: Optional[str] = "pending"
     file_count: Optional[int] = 0
     created_at: Optional[str]
@@ -111,6 +120,9 @@ def get_projects(db: Session = Depends(get_db)):
                 "year": p.year,
                 "category": p.category,
                 "description": p.description,
+                "owner": p.owner,
+                "debugger": p.debugger,
+                "improvements": p.improvements,
                 "index_status": p.index_status or "pending",
                 "file_count": p.file_count or 0,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
@@ -138,6 +150,9 @@ def create_project(
             year=project.year,
             category=project.category,
             description=project.description,
+            owner=project.owner,
+            debugger=project.debugger,
+            improvements=project.improvements,
             index_status="pending",
             file_count=0
         )
@@ -151,6 +166,9 @@ def create_project(
             "year": db_project.year,
             "category": db_project.category,
             "description": db_project.description,
+            "owner": db_project.owner,
+            "debugger": db_project.debugger,
+            "improvements": db_project.improvements,
             "index_status": db_project.index_status,
             "file_count": db_project.file_count,
             "created_at": db_project.created_at.isoformat() if db_project.created_at else None,
@@ -175,3 +193,54 @@ def delete_project(
     db.delete(project)
     db.commit()
     return {"message": "项目删除成功"}
+
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255, description="项目名称")
+    path: Optional[str] = Field(None, min_length=1, max_length=500, description="项目路径")
+    year: Optional[int] = Field(None, ge=2000, le=2100, description="项目年份")
+    category: Optional[str] = Field(None, max_length=100, description="项目分类")
+    description: Optional[str] = Field(None, max_length=1000, description="项目描述")
+    owner: Optional[str] = Field(None, max_length=100, description="负责人")
+    debugger: Optional[str] = Field(None, max_length=100, description="调试人")
+    improvements: Optional[str] = Field(None, description="改进内容")
+
+
+@router.put("/{project_id}")
+def update_project(
+    project_id: int,
+    project_update: ProjectUpdate,
+    db: Session = Depends(get_db)
+):
+    """更新项目"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    
+    # 如果提供了新路径，验证路径安全性
+    if project_update.path is not None and project_update.path != project.path:
+        validate_path_safety(project_update.path)
+    
+    # 更新字段（只更新非 None 的字段）
+    update_data = project_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(project, field, value)
+    
+    db.commit()
+    db.refresh(project)
+    
+    return {
+        "id": project.id,
+        "name": project.name,
+        "path": project.path,
+        "year": project.year,
+        "category": project.category,
+        "description": project.description,
+        "owner": project.owner,
+        "debugger": project.debugger,
+        "improvements": project.improvements,
+        "index_status": project.index_status,
+        "file_count": project.file_count,
+        "created_at": project.created_at.isoformat() if project.created_at else None,
+        "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+    }
