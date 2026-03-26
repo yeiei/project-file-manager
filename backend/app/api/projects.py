@@ -88,6 +88,8 @@ class ProjectResponse(BaseModel):
     year: Optional[int]
     category: Optional[str]
     description: Optional[str]
+    index_status: Optional[str] = "pending"
+    file_count: Optional[int] = 0
     created_at: Optional[str]
     updated_at: Optional[str]
 
@@ -95,20 +97,25 @@ class ProjectResponse(BaseModel):
 @router.get("", response_model=List[dict])
 def get_projects(db: Session = Depends(get_db)):
     """获取项目列表"""
-    projects = db.query(Project).all()
-    return [
-        {
-            "id": p.id,
-            "name": p.name,
-            "path": p.path,
-            "year": p.year,
-            "category": p.category,
-            "description": p.description,
-            "created_at": p.created_at.isoformat() if p.created_at else None,
-            "updated_at": p.updated_at.isoformat() if p.updated_at else None,
-        }
-        for p in projects
-    ]
+    try:
+        projects = db.query(Project).all()
+        return [
+            {
+                "id": p.id,
+                "name": p.name,
+                "path": p.path,
+                "year": p.year,
+                "category": p.category,
+                "description": p.description,
+                "index_status": p.index_status or "pending",
+                "file_count": p.file_count or 0,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+            }
+            for p in projects
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取项目列表失败: {str(e)}")
 
 
 @router.post("")
@@ -117,26 +124,50 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     """创建项目"""
-    # 验证路径安全性
-    validate_path_safety(project.path)
+    try:
+        # 验证路径安全性
+        validate_path_safety(project.path)
+        
+        db_project = Project(
+            name=project.name,
+            path=project.path,
+            year=project.year,
+            category=project.category,
+            description=project.description,
+            index_status="pending",
+            file_count=0
+        )
+        db.add(db_project)
+        db.commit()
+        db.refresh(db_project)
+        return {
+            "id": db_project.id,
+            "name": db_project.name,
+            "path": db_project.path,
+            "year": db_project.year,
+            "category": db_project.category,
+            "description": db_project.description,
+            "index_status": db_project.index_status,
+            "file_count": db_project.file_count,
+            "created_at": db_project.created_at.isoformat() if db_project.created_at else None,
+            "updated_at": db_project.updated_at.isoformat() if db_project.updated_at else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"创建项目失败: {str(e)}")
+
+
+@router.delete("/{project_id}")
+def delete_project(
+    project_id: int,
+    db: Session = Depends(get_db)
+):
+    """删除项目"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
     
-    db_project = Project(
-        name=project.name,
-        path=project.path,
-        year=project.year,
-        category=project.category,
-        description=project.description
-    )
-    db.add(db_project)
+    db.delete(project)
     db.commit()
-    db.refresh(db_project)
-    return {
-        "id": db_project.id,
-        "name": db_project.name,
-        "path": db_project.path,
-        "year": db_project.year,
-        "category": db_project.category,
-        "description": db_project.description,
-        "created_at": db_project.created_at.isoformat() if db_project.created_at else None,
-        "updated_at": db_project.updated_at.isoformat() if db_project.updated_at else None,
-    }
+    return {"message": "项目删除成功"}

@@ -31,8 +31,8 @@ def get_cors_origins() -> list:
     if cors_env:
         # 支持逗号分隔的多个域名
         return [origin.strip() for origin in cors_env.split(",") if origin.strip()]
-    # 默认只允许本地域名
-    return ["http://localhost:3000", "http://localhost:8080"]
+    # 默认允许所有来源（开发环境）
+    return ["*"]
 
 
 app.add_middleware(

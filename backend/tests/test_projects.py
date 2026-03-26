@@ -9,11 +9,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from app.main import app
 
 
-# @pytest.fixture
-# def client():
-#     return TestClient(app)
-
-
 class TestProjectsAPI:
     def test_get_projects_empty(self, client):
         """获取项目列表 - 空列表"""
@@ -25,7 +20,7 @@ class TestProjectsAPI:
         """创建项目"""
         data = {
             "name": "测试项目",
-            "path": "/mnt/nas/projects/test",
+            "path": "projects/test",
             "year": 2024,
             "category": "视频",
             "description": "测试描述"
@@ -42,7 +37,7 @@ class TestProjectsAPI:
         # 先创建一个项目
         data = {
             "name": "测试项目2",
-            "path": "/mnt/nas/projects/test2",
+            "path": "projects/test2",
             "year": 2024,
             "category": "图片"
         }

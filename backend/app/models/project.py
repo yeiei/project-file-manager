@@ -14,5 +14,7 @@ class Project(Base):
     year = Column(Integer)
     category = Column(String(100))
     description = Column(Text)
+    index_status = Column(String(20), default="pending")  # 'pending', 'indexing', 'completed'
+    file_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
