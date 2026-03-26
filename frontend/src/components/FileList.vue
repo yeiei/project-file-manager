@@ -24,7 +24,14 @@ function formatSize(bytes: number): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('zh-CN')
+  if (!dateStr) return '-'
+  // 尝试解析 "2026-03-26 20:40:57" 格式
+  const date = new Date(dateStr.replace(' ', 'T'))
+  if (isNaN(date.getTime())) {
+    // 如果无法解析，直接返回原始字符串
+    return dateStr
+  }
+  return date.toLocaleString('zh-CN')
 }
 
 const columns = [
@@ -50,8 +57,8 @@ const columns = [
   },
   {
     title: 'Modified',
-    key: 'modifiedTime',
-    render: (row: FileItem) => formatDate(row.modifiedTime)
+    key: 'modified',
+    render: (row: FileItem) => formatDate(row.modified)
   }
 ]
 

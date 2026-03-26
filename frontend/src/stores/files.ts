@@ -34,7 +34,7 @@ export const useFilesStore = defineStore('files', () => {
     try {
       currentProjectId.value = projectId
       currentPath.value = path
-      files.value = await filesApi.browse({ projectId, path })
+      files.value = await filesApi.browse({ project_id: projectId, path })
     } finally {
       loading.value = false
     }
@@ -43,9 +43,13 @@ export const useFilesStore = defineStore('files', () => {
   function enterDirectory(dir: FileItem) {
     if (!dir.isDirectory) return
     pathStack.value.push(currentPath.value)
-    currentPath.value = dir.path
+    // 构造完整路径：当前路径 + 目录名
+    const newPath = currentPath.value 
+      ? `${currentPath.value}/${dir.name}` 
+      : dir.name
+    currentPath.value = newPath
     if (currentProjectId.value) {
-      browse(currentProjectId.value, dir.path)
+      browse(currentProjectId.value, newPath)
     }
   }
 

@@ -28,12 +28,12 @@ export interface FileItem {
   path: string
   isDirectory: boolean
   size: number
-  modifiedTime: string
+  modified: string
   children?: FileItem[]
 }
 
 export interface BrowseParams {
-  projectId: number
+  project_id: number
   path?: string
 }
 
@@ -44,7 +44,7 @@ export const projectsApi = {
 }
 
 export const filesApi = {
-  browse: (params: BrowseParams) => api.get<FileItem[]>('/api/files/browse', { params }).then(res => res.data),
+  browse: (params: BrowseParams) => api.get<{path: string, items: FileItem[]}>('/api/files/browse', { params }).then(res => res.data.items),
   preview: (fileId: number) => api.get(`/api/files/preview/${fileId}`, { responseType: 'blob' })
 }
 
