@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NButton, NCard, NModal, NForm, NFormItem, NInput, NSelect, NGrid, NGridItem, useMessage, useDialog } from 'naive-ui'
+import { NButton, NCard, NModal, NForm, NFormItem, NInput, NSelect, NGrid, NGridItem, useMessage, useDialog, NSpace, NInputGroup } from 'naive-ui'
 import { useProjectsStore } from '../stores/projects'
 import ProjectCard from '../components/ProjectCard.vue'
 import type { CreateProjectInput } from '../api'
@@ -15,7 +15,10 @@ const formValue = ref<CreateProjectInput>({
   path: '',
   year: 2026,
   category: '',
-  description: ''
+  description: '',
+  owner: '',
+  debugger: '',
+  improvements: ''
 })
 
 const yearOptions = Array.from({ length: 22 }, (_, i) => ({
@@ -33,9 +36,35 @@ const openModal = () => {
     path: '',
     year: 2026,
     category: '',
-    description: ''
+    description: '',
+    owner: '',
+    debugger: '',
+    improvements: ''
   }
   showModal.value = true
+}
+
+const selectDirectory = () => {
+  // 触发文件选择器 - 使用 input type="file" 选择目录
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.webkitdirectory = true
+  input.multiple = false
+  input.onchange = (e) => {
+    const files = (e.target as HTMLInputElement).files
+    if (files && files.length > 0) {
+      // 获取选中的目录路径
+      const file = files[0] as any
+      // @ts-ignore - webkitRelativePath 包含目录路径
+      const path = file.webkitRelativePath || file.name
+      // 由于浏览器安全限制，我们只能获取文件名，使用提示让用户手动补充完整路径
+      formValue.value.path = path.split('/').slice(0, -1).join('/') + '/'
+      if (!formValue.value.path || formValue.value.path === '/') {
+        formValue.value.path = file.name + '/'
+      }
+    }
+  }
+  input.click()
 }
 
 const handleSubmit = async () => {
@@ -101,7 +130,10 @@ const handleDelete = (id: number) => {
         </NFormItem>
         
         <NFormItem label="项目路径" required>
-          <NInput v-model:value="formValue.path" placeholder="请输入项目路径" />
+          <NInputGroup>
+            <NInput v-model:value="formValue.path" placeholder="请输入或选择项目路径" />
+            <NButton @click="selectDirectory">选择目录</NButton>
+          </NInputGroup>
         </NFormItem>
 
         <NFormItem label="年份">
@@ -110,6 +142,23 @@ const handleDelete = (id: number) => {
 
         <NFormItem label="分类" required>
           <NInput v-model:value="formValue.category" placeholder="请输入分类" />
+        </NFormItem>
+
+        <NFormItem label="负责人">
+          <NInput v-model:value="formValue.owner" placeholder="请输入负责人" />
+        </NFormItem>
+
+        <NFormItem label="调试人">
+          <NInput v-model:value="formValue.debugger" placeholder="请输入调试人" />
+        </NFormItem>
+
+        <NFormItem label="改进内容">
+          <NInput
+            v-model:value="formValue.improvements"
+            type="textarea"
+            placeholder="请输入改进内容"
+            :rows="2"
+          />
         </NFormItem>
 
         <NFormItem label="描述">

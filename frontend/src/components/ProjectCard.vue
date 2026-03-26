@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NCard, NTag, NButton, NSpace } from 'naive-ui'
+import { NCard, NTag, NButton, NSpace, NDivider } from 'naive-ui'
 import type { Project } from '../api'
 
 defineProps<{
@@ -16,7 +16,9 @@ const emit = defineEmits<{
     <template #header>
       <div class="card-header">
         <span class="project-name">{{ project.name }}</span>
-        <NTag :bordered="false" type="info">{{ project.year }}</NTag>
+        <NSpace>
+          <NTag :bordered="false" type="info">{{ project.year }}</NTag>
+        </NSpace>
       </div>
     </template>
     
@@ -26,6 +28,18 @@ const emit = defineEmits<{
       </p>
       <p class="path">
         <strong>路径：</strong>{{ project.path }}
+      </p>
+      <template v-if="project.owner || project.debugger">
+        <NDivider style="margin: 8px 0" />
+        <p class="owner" v-if="project.owner">
+          <strong>负责人：</strong>{{ project.owner }}
+        </p>
+        <p class="debugger" v-if="project.debugger">
+          <strong>调试人：</strong>{{ project.debugger }}
+        </p>
+      </template>
+      <p class="improvement" v-if="project.improvements">
+        <strong>改进内容：</strong>{{ project.improvements }}
       </p>
       <p class="description" v-if="project.description">
         {{ project.description }}
@@ -59,8 +73,14 @@ const emit = defineEmits<{
   color: #666;
 }
 
-.category, .path {
+.category, .path, .owner, .debugger {
   font-size: 14px;
+}
+
+.improvement {
+  font-size: 13px;
+  color: #666;
+  margin-top: 4px;
 }
 
 .description {

@@ -12,6 +12,9 @@ export interface Project {
   year: number
   category: string
   description: string
+  owner: string
+  debugger: string
+  improvements: string
 }
 
 export interface CreateProjectInput {
@@ -20,6 +23,9 @@ export interface CreateProjectInput {
   year: number
   category: string
   description: string
+  owner: string
+  debugger: string
+  improvements: string
 }
 
 export interface FileItem {
