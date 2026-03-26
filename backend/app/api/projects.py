@@ -1,9 +1,10 @@
 """项目 API"""
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pathlib import Path
 from pydantic import BaseModel, Field, field_validator
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import json
 
 from app.core.database import get_db
 from app.models import Project
@@ -74,6 +75,23 @@ class ProjectCreate(BaseModel):
     owner: Optional[str] = Field(None, max_length=100, description="负责人")
     debugger: Optional[str] = Field(None, max_length=100, description="调试人")
     improvements: Optional[str] = Field(None, description="改进内容")
+    # 自定义字段 (JSON 格式)
+    custom_fields: Optional[Dict] = Field(default_factory=dict, description="自定义字段 (JSON 对象)")
+
+    @field_validator('custom_fields', mode='before')
+    @classmethod
+    def parse_custom_fields(cls, v):
+        """解析 custom_fields 为 JSON 对象"""
+        if v is None:
+            return {}
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return {}
+        return {}
 
     @field_validator('path')
     @classmethod
@@ -100,6 +118,8 @@ class ProjectResponse(BaseModel):
     owner: Optional[str] = None
     debugger: Optional[str] = None
     improvements: Optional[str] = None
+    # 自定义字段 (JSON 对象)
+    custom_fields: Optional[Dict] = {}
     # 原有字段
     index_status: Optional[str] = "pending"
     file_count: Optional[int] = 0
@@ -123,6 +143,7 @@ def get_projects(db: Session = Depends(get_db)):
                 "owner": p.owner,
                 "debugger": p.debugger,
                 "improvements": p.improvements,
+                "custom_fields": json.loads(p.custom_fields) if p.custom_fields else {},
                 "index_status": p.index_status or "pending",
                 "file_count": p.file_count or 0,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
@@ -153,6 +174,7 @@ def create_project(
             owner=project.owner,
             debugger=project.debugger,
             improvements=project.improvements,
+            custom_fields=json.dumps(project.custom_fields) if project.custom_fields else "{}",
             index_status="pending",
             file_count=0
         )
@@ -169,6 +191,7 @@ def create_project(
             "owner": db_project.owner,
             "debugger": db_project.debugger,
             "improvements": db_project.improvements,
+            "custom_fields": json.loads(db_project.custom_fields) if db_project.custom_fields else {},
             "index_status": db_project.index_status,
             "file_count": db_project.file_count,
             "created_at": db_project.created_at.isoformat() if db_project.created_at else None,
@@ -204,6 +227,23 @@ class ProjectUpdate(BaseModel):
     owner: Optional[str] = Field(None, max_length=100, description="负责人")
     debugger: Optional[str] = Field(None, max_length=100, description="调试人")
     improvements: Optional[str] = Field(None, description="改进内容")
+    # 自定义字段 (JSON 格式)
+    custom_fields: Optional[Dict] = Field(None, description="自定义字段 (JSON 对象)")
+
+    @field_validator('custom_fields', mode='before')
+    @classmethod
+    def parse_custom_fields(cls, v):
+        """解析 custom_fields 为 JSON 对象"""
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return {}
+        return {}
 
 
 @router.put("/{project_id}")
@@ -224,6 +264,9 @@ def update_project(
     # 更新字段（只更新非 None 的字段）
     update_data = project_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
+        # 特殊处理 custom_fields，转换为 JSON 字符串存储
+        if field == 'custom_fields' and value is not None:
+            value = json.dumps(value)
         setattr(project, field, value)
     
     db.commit()
@@ -239,6 +282,7 @@ def update_project(
         "owner": project.owner,
         "debugger": project.debugger,
         "improvements": project.improvements,
+        "custom_fields": json.loads(project.custom_fields) if project.custom_fields else {},
         "index_status": project.index_status,
         "file_count": project.file_count,
         "created_at": project.created_at.isoformat() if project.created_at else None,
