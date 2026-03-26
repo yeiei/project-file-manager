@@ -1,7 +1,8 @@
 """项目 API"""
 from typing import List, Optional
-from pydantic import BaseModel
-from fastapi import APIRouter, Depends
+from pathlib import Path
+from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -10,12 +11,74 @@ from app.models import Project
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
+def validate_path_safety(path: str, base_dir: str = "/mnt/nas") -> bool:
+    """
+    验证路径安全性，防止路径遍历攻击
+    
+    Args:
+        path: 用户输入的路径
+        base_dir: 基础目录，路径不应超出此目录
+    
+    Returns:
+        bool: 路径是否安全
+    
+    Raises:
+        HTTPException: 路径不安全时抛出异常
+    """
+    # 解析路径并规范化
+    try:
+        # 将路径转换为绝对路径并规范化（解析 .. 和 .）
+        full_path = Path(base_dir) / path
+        resolved_path = full_path.resolve()
+        base_path = Path(base_dir).resolve()
+        
+        # 检查是否超出基础目录
+        if not str(resolved_path).startswith(str(base_path)):
+            raise HTTPException(
+                status_code=400,
+                detail="路径不允许超出允许的目录范围"
+            )
+        
+        # 检查路径中是否包含危险字符或模式
+        dangerous_patterns = ["../", "..\\", "~", "$"]
+        for pattern in dangerous_patterns:
+            if pattern in path:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"路径包含不安全字符: {pattern}"
+                )
+        
+        return True
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=400, detail="路径格式无效")
+
+
 class ProjectCreate(BaseModel):
-    name: str
-    path: str
-    year: Optional[int] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=255, description="项目名称")
+    path: str = Field(..., min_length=1, max_length=500, description="项目路径")
+    year: Optional[int] = Field(None, ge=2000, le=2100, description="项目年份")
+    category: Optional[str] = Field(None, max_length=100, description="项目分类")
+    description: Optional[str] = Field(None, max_length=1000, description="项目描述")
+
+    @field_validator('path')
+    @classmethod
+    def validate_path(cls, v: str) -> str:
+        """验证路径安全性"""
+        # 检查绝对路径
+        if v.startswith('/') or v.startswith('\\'):
+            raise ValueError("路径不能是绝对路径")
+        
+        # 检查路径遍历
+        if '..' in v:
+            raise ValueError("路径不能包含 ..")
+        
+        # 检查危险字符
+        if any(char in v for char in ['$', '`', '|', ';', '&', '\n', '\r']):
+            raise ValueError("路径包含非法字符")
+        
+        return v
 
 
 class ProjectResponse(BaseModel):
@@ -54,6 +117,9 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     """创建项目"""
+    # 验证路径安全性
+    validate_path_safety(project.path)
+    
     db_project = Project(
         name=project.name,
         path=project.path,
